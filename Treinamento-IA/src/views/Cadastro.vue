@@ -9,15 +9,34 @@
         <p class="subtitle">
           Registre-se para acessar o treinamento em IA para licitações e auditorias
         </p>
+
         <form @submit.prevent="signUp">
           <label for="name">Nome completo</label>
-          <input type="text" id="name" v-model="name" placeholder="Seu nome" required />
+          <input
+            type="text"
+            id="name"
+            v-model="name"
+            placeholder="Seu nome"
+            required
+          />
 
           <label for="email">E-mail</label>
-          <input type="email" id="email" v-model="email" placeholder="Seu e-mail" required />
+          <input
+            type="email"
+            id="email"
+            v-model="email"
+            placeholder="Seu e-mail"
+            required
+          />
 
           <label for="password">Senha</label>
-          <input type="password" id="password" v-model="password" placeholder="Crie uma senha" required />
+          <input
+            type="password"
+            id="password"
+            v-model="password"
+            placeholder="Crie uma senha"
+            required
+          />
 
           <label for="confirmPassword">Confirme sua senha</label>
           <input
@@ -28,8 +47,13 @@
             required
           />
 
-          <button type="submit">Criar conta</button>
+          <button type="submit" :disabled="loading">
+            {{ loading ? "Criando conta..." : "Criar conta" }}
+          </button>
         </form>
+
+        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+
         <p class="register-text">
           Já tem uma conta? <a href="/login" class="register-link">Faça login</a>
         </p>
@@ -40,18 +64,27 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { supabase } from "../services/supabase"; // Certifique-se de que esse caminho está correto!
+import { supabase } from "@/services/supabase";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const name = ref<string>("");
 const email = ref<string>("");
 const password = ref<string>("");
 const confirmPassword = ref<string>("");
+const errorMessage = ref<string | null>(null);
+const loading = ref<boolean>(false);
 
 const signUp = async () => {
+  errorMessage.value = null;
+
   if (password.value !== confirmPassword.value) {
-    alert("As senhas não coincidem!");
+    errorMessage.value = "As senhas não coincidem!";
     return;
   }
+
+  loading.value = true;
 
   const { data, error } = await supabase.auth.signUp({
     email: email.value,
@@ -61,13 +94,15 @@ const signUp = async () => {
     },
   });
 
+  loading.value = false;
+
   if (error) {
     console.error("Erro no cadastro:", error.message);
-    alert("Erro ao cadastrar: " + error.message);
+    errorMessage.value = "Erro ao cadastrar: " + error.message;
   } else {
     console.log("Cadastro realizado com sucesso!", data);
-    alert("Cadastro realizado com sucesso!");
-    window.location.href = "/login"; // Redireciona para login
+    alert("Cadastro realizado com sucesso! Verifique seu e-mail para confirmação.");
+    router.push("/login"); // 🔹 Redireciona para login após cadastro
   }
 };
 </script>
@@ -156,6 +191,11 @@ button {
   margin-top: 10px;
 }
 
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 button:hover {
   background-color: #043c6a;
 }
@@ -173,5 +213,11 @@ button:hover {
 
 .register-link:hover {
   text-decoration: underline;
+}
+
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
 }
 </style>
